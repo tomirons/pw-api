@@ -1,0 +1,21 @@
+{
+  "name": "huludini/pw-api",
+  "description": "A package to retrieve data from a Perfect World game server",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Tom Irons",
+      "email": "tom.irons@hotmail.com"
+    }
+  ],
+  "require": {
+    "php": ">=5.4.0",
+    "efriandika/laravel-settings": "^1.1"
+  },
+  "autoload": {
+    "psr-0" : {
+      "Huludini\\PerfectWorldAPI" : "src/"
+    }
+  },
+  "minimum-stability": "stable"
+}
