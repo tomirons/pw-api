@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Schema;
  */
 class API
 {
+    public $online;
+
     public $data = [];
 
     public function __construct()
@@ -26,6 +28,7 @@ class API
                 if ( isset( $PROTOCOL ) )
                 {
                     $this->data = $PROTOCOL;
+                    $this->online = $this->serverOnline();
                 }
             }
             else
@@ -435,7 +438,7 @@ class API
     public function getOnlineList()
     {
         $online = [];
-        if ( $this->serverOnline() )
+        if ( $this->online )
         {
             $id = 0;
             $pack = pack( 'N*', -1, 1, $id ) . Gamed::packString( '1' );
