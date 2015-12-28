@@ -579,4 +579,16 @@ class API
     {
         return @fsockopen( config( 'pw-api.local' ), config( 'pw-api.ports.client' ), $errCode, $errStr, 1 ) ? TRUE : FALSE;
     }
+
+    public function ports()
+    {
+        $ports = [];
+        $port_list = config( 'pw-api.ports' );
+        foreach ( $port_list as $name => $port )
+        {
+            $ports[$name]['port'] = $port;
+            $ports[$name]['open'] = @fsockopen( config( 'pw-api.local' ), $port, $errCode, $errStr, 1 ) ? TRUE : FALSE;
+        }
+        return $ports;
+    }
 }
