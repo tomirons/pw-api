@@ -1,8 +1,6 @@
 <?php
 
 namespace Huludini\PerfectWorldAPI;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * Class API
@@ -14,27 +12,29 @@ class API
     public $online;
 
     public $data = [];
+    
+    public $gamed;
 
     public function __construct()
     {
-        // Check if there is a protocol file for the set game version
-        if ( Schema::hasTable( 'pweb_settings' ) )
-        {
-            $version = ( DB::table( 'pweb_settings' )->where( 'key', 'server_version' )->exists() ) ? settings( 'server_version' ) : '101';
+        // Set some default values
+        $this->gamed = new Gamed();
+        $this->online = $this->serverOnline();
 
-            if ( file_exists( __DIR__ . '/../../protocols/pw_v' . $version . '.php' ) )
+        // Check if there is a protocol file for the set game version
+        $version = settings( 'server_version', '101' );
+
+        if ( file_exists( __DIR__ . '/../../protocols/pw_v' . $version . '.php' ) )
+        {
+            require( __DIR__ . '/../../protocols/pw_v' . $version . '.php' );
+            if ( isset( $PROTOCOL ) )
             {
-                require( __DIR__ . '/../../protocols/pw_v' . $version . '.php' );
-                if ( isset( $PROTOCOL ) )
-                {
-                    $this->data = $PROTOCOL;
-                    $this->online = $this->serverOnline();
-                }
+                $this->data = $PROTOCOL;
             }
-            else
-            {
-                throw new Exception( trans( 'pw-api-messages.no_version', ['version' => $version] ) );
-            }
+        }
+        else
+        {
+            throw new \Exception( trans( 'pw-api-messages.no_version', ['version' => $version] ) );
         }
     }
 
@@ -47,10 +47,10 @@ class API
     public function getRole($role)
     {
         $pack = pack("N*", -1, $role);
-        $pack = Gamed::createHeader( $this->data['code']['getRole'], $pack );
-        $send = Gamed::SendToGamedBD( $pack );
-        $data = Gamed::deleteHeader( $send );
-        $user = Gamed::unmarshal( $data, $this->data['role'] );
+        $pack = $this->gamed->createHeader( $this->data['code']['getRole'], $pack );
+        $send = $this->gamed->SendToGamedBD( $pack );
+        $data = $this->gamed->deleteHeader( $send );
+        $user = $this->gamed->unmarshal( $data, $this->data['role'] );
 
         if( !is_array( $user ) )
         {
@@ -69,10 +69,10 @@ class API
     public function getRoleBase($role)
     {
         $pack = pack("N*", -1, $role);
-        $pack = Gamed::createHeader($this->data['code']['getRoleBase'], $pack);
-        $send = Gamed::SendToGamedBD($pack);
-        $data = Gamed::deleteHeader($send);
-        $user = Gamed::unmarshal($data, $this->data['code']['base']);
+        $pack = $this->gamed->createHeader($this->data['code']['getRoleBase'], $pack);
+        $send = $this->gamed->SendToGamedBD($pack);
+        $data = $this->gamed->deleteHeader($send);
+        $user = $this->gamed->unmarshal($data, $this->data['code']['base']);
 
         return $user;
     }
@@ -80,10 +80,10 @@ class API
     public function getRoleStatus($role)
     {
         $pack = pack("N*", -1, $role);
-        $pack = Gamed::createHeader($this->data['code']['getRoleStatus'], $pack);
-        $send = Gamed::SendToGamedBD($pack);
-        $data = Gamed::deleteHeader($send);
-        $user = Gamed::unmarshal($data, $this->data['role']['status']);
+        $pack = $this->gamed->createHeader($this->data['code']['getRoleStatus'], $pack);
+        $send = $this->gamed->SendToGamedBD($pack);
+        $data = $this->gamed->deleteHeader($send);
+        $user = $this->gamed->unmarshal($data, $this->data['role']['status']);
 
         return $user;
     }
@@ -91,10 +91,10 @@ class API
     public function getRoleInventory($role)
     {
         $pack = pack("N*", -1, $role);
-        $pack = Gamed::createHeader($this->data['code']['getRoleInventory'], $pack);
-        $send = Gamed::SendToGamedBD($pack);
-        $data = Gamed::deleteHeader($send);
-        $user = Gamed::unmarshal($data, $this->data['role']['pocket']['inv']);
+        $pack = $this->gamed->createHeader($this->data['code']['getRoleInventory'], $pack);
+        $send = $this->gamed->SendToGamedBD($pack);
+        $data = $this->gamed->deleteHeader($send);
+        $user = $this->gamed->unmarshal($data, $this->data['role']['pocket']['inv']);
 
         return $user;
     }
@@ -102,10 +102,10 @@ class API
     public function getRoleEquipment($role)
     {
         $pack = pack("N*", -1, $role);
-        $pack = Gamed::createHeader($this->data['code']['getRoleEquipment'], $pack);
-        $send = Gamed::SendToGamedBD($pack);
-        $data = Gamed::deleteHeader($send);
-        $user = Gamed::unmarshal($data, $this->data['role']['pocket']['equipment']);
+        $pack = $this->gamed->createHeader($this->data['code']['getRoleEquipment'], $pack);
+        $send = $this->gamed->SendToGamedBD($pack);
+        $data = $this->gamed->deleteHeader($send);
+        $user = $this->gamed->unmarshal($data, $this->data['role']['pocket']['equipment']);
 
         return $user;
     }
@@ -113,10 +113,10 @@ class API
     public function getRolePetBadge($role)
     {
         $pack = pack("N*", -1, $role);
-        $pack = Gamed::createHeader(3088, $pack);
-        $send = Gamed::SendToGamedBD($pack);
-        $data = Gamed::deleteHeader($send);
-        $user = Gamed::unmarshal($data, $this->data['role']['pocket']['petbadge']);
+        $pack = $this->gamed->createHeader(3088, $pack);
+        $send = $this->gamed->SendToGamedBD($pack);
+        $data = $this->gamed->deleteHeader($send);
+        $user = $this->gamed->unmarshal($data, $this->data['role']['pocket']['petbadge']);
 
         return $user;
     }
@@ -124,10 +124,10 @@ class API
     public function getRoleStorehouse($role)
     {
         $pack = pack("N*", -1, $role);
-        $pack = Gamed::createHeader($this->data['code']['getRoleStoreHouse'], $pack);
-        $send = Gamed::SendToGamedBD($pack);
-        $data = Gamed::deleteHeader($send);
-        $store = Gamed::unmarshal($data, $this->data['role']['storehouse']);
+        $pack = $this->gamed->createHeader($this->data['code']['getRoleStoreHouse'], $pack);
+        $send = $this->gamed->SendToGamedBD($pack);
+        $data = $this->gamed->deleteHeader($send);
+        $store = $this->gamed->unmarshal($data, $this->data['role']['storehouse']);
 
         return $store;
     }
@@ -135,10 +135,10 @@ class API
     public function getRoleTask($role)
     {
         $pack = pack("N*", -1, $role);
-        $pack = Gamed::createHeader($this->data['code']['getRoleTask'], $pack);
-        $send = Gamed::SendToGamedBD($pack);
-        $data = Gamed::deleteHeader($send);
-        $user = Gamed::unmarshal($data, $this->data['role']['task']);
+        $pack = $this->gamed->createHeader($this->data['code']['getRoleTask'], $pack);
+        $send = $this->gamed->SendToGamedBD($pack);
+        $data = $this->gamed->deleteHeader($send);
+        $user = $this->gamed->unmarshal($data, $this->data['role']['task']);
 
         return $user;
     }
@@ -151,10 +151,10 @@ class API
     public function getJdRole($role)
     {
         /*$pack = pack("N*", -1, $role);
-        $pack = Gamed::createHeader(config('code.getRole'), $pack);
-        $send = Gamed::SendToGamedBD($pack);
-        $data = Gamed::deleteHeader($send);
-        $user = Gamed::unmarshal($data, config('role'));
+        $pack = $this->gamed->createHeader(config('code.getRole'), $pack);
+        $send = $this->gamed->SendToGamedBD($pack);
+        $data = $this->gamed->deleteHeader($send);
+        $user = $this->gamed->unmarshal($data, config('role'));
 
         return $user;*/
     }
@@ -167,10 +167,10 @@ class API
     public function getRoles( $user )
     {
         $pack = pack( "N*", -1, $user );
-        $pack = Gamed::createHeader( $this->data['code']['getUserRoles'], $pack );
-        $send = Gamed::SendToGamedBD( $pack );
-        $data = Gamed::deleteHeader( $send );
-        $roles = Gamed::unmarshal( $data, $this->data['user']['roles'] );
+        $pack = $this->gamed->createHeader( $this->data['code']['getUserRoles'], $pack );
+        $send = $this->gamed->SendToGamedBD( $pack );
+        $data = $this->gamed->deleteHeader( $send );
+        $roles = $this->gamed->unmarshal( $data, $this->data['user']['roles'] );
 
         return $roles;
     }
@@ -183,8 +183,8 @@ class API
     public function getUser($id)
     {
         $pack = pack("N*", -1, $id, 1, 1);
-        $data = Gamed::cuint($this->data['code']['getUser']).Gamed::cuint(strlen($pack)).$pack;
-        $send = Gamed::SendToGamedBD($data);
+        $data = $this->gamed->cuint($this->data['code']['getUser']).$this->gamed->cuint(strlen($pack)).$pack;
+        $send = $this->gamed->SendToGamedBD($data);
         $strlarge = unpack("H", substr($send, 2, 1 ));
         if(substr($strlarge[1], 0, 1) == 8)
         {
@@ -195,9 +195,9 @@ class API
             $tmp = 11;
         }
         $send = substr($send, $tmp);
-        $user = Gamed::unmarshal($send, $this->data['user']['info']);
-        $user['login_ip'] = Gamed::getIp(Gamed::reverseOctet(substr($user['login_record'], 8, 8)));
-        $user['login_time'] = Gamed::getTime(substr($user['login_record'], 0, 8));
+        $user = $this->gamed->unmarshal($send, $this->data['user']['info']);
+        $user['login_ip'] = $this->gamed->getIp($this->gamed->reverseOctet(substr($user['login_record'], 8, 8)));
+        $user['login_time'] = $this->gamed->getTime(substr($user['login_record'], 0, 8));
 
         return $user;
     }
@@ -210,9 +210,9 @@ class API
     public function getJdUser($id)
     {
         /*$pack = pack("N*", -1, $id);
-        $data = Gamed::SendToGamedBD(Gamed::createHeader(config('code.getUser'), $pack));
-        $send = Gamed::SendToGamedBD($data);
-        return Gamed::unmarshal($data, config('user.info'));*/
+        $data = $this->gamed->SendToGamedBD($this->gamed->createHeader(config('code.getUser'), $pack));
+        $send = $this->gamed->SendToGamedBD($data);
+        return $this->gamed->unmarshal($data, config('user.info'));*/
     }
 
     /**
@@ -261,25 +261,25 @@ class API
         }
         if ( $this->data['code']['putRole'] != '' )
         {
-            $pack = pack( "NNC*", -1, $role, 1).Gamed::marshal( $params, $this->data['role'] );
+            $pack = pack( "NNC*", -1, $role, 1).$this->gamed->marshal( $params, $this->data['role'] );
 
-            return Gamed::SendToGamedBD( Gamed::createHeader( $this->data['code']['putRole'], $pack ) );
+            return $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['code']['putRole'], $pack ) );
         }
         else
         {
-            $pack = pack( "NNC*", -1, $role ) . Gamed::marshal( $params["base"], $this->data['role']['base'] );
-            Gamed::SendToGamedBD( Gamed::createHeader( $this->data['role']['putRoleBase'], $pack ) );
-            $pack = pack( "NNC*", -1, $role ) . Gamed::marshal( $params["status"], $this->data['role']['status'] );
-            Gamed::SendToGamedBD( Gamed::createHeader( $this->data['role']['putRoleStatus'], $pack ) );
-            $pack = pack( "NNC*", -1, $role ) . Gamed::marshal( $params["pocket"], $this->data['role']['pocket'] );
-            Gamed::SendToGamedBD( Gamed::createHeader( $this->data['role']['putRoleInventory'], $pack ) );
-            $pack = pack( "NNC*", -1, $role ) . Gamed::marshal( $params["equipment"], $this->data['role']['equipment'] );
-            Gamed::SendToGamedBD( Gamed::createHeader( $this->data['role']['putRoleEquipment'], $pack ) );
-            $pack = pack( "NNC*", -1, $role ) . Gamed::marshal( $params["storehouse"], $this->data['role']['storehouse'] );
-            Gamed::SendToGamedBD( Gamed::createHeader( $this->data['role']['putRoleStoreHouse'], $pack ) );
-            $pack = pack( "NNC*", -1, $role ) . Gamed::marshal( $params["task"], $this->data['role']['task'] );
+            $pack = pack( "NNC*", -1, $role ) . $this->gamed->marshal( $params["base"], $this->data['role']['base'] );
+            $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['role']['putRoleBase'], $pack ) );
+            $pack = pack( "NNC*", -1, $role ) . $this->gamed->marshal( $params["status"], $this->data['role']['status'] );
+            $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['role']['putRoleStatus'], $pack ) );
+            $pack = pack( "NNC*", -1, $role ) . $this->gamed->marshal( $params["pocket"], $this->data['role']['pocket'] );
+            $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['role']['putRoleInventory'], $pack ) );
+            $pack = pack( "NNC*", -1, $role ) . $this->gamed->marshal( $params["equipment"], $this->data['role']['equipment'] );
+            $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['role']['putRoleEquipment'], $pack ) );
+            $pack = pack( "NNC*", -1, $role ) . $this->gamed->marshal( $params["storehouse"], $this->data['role']['storehouse'] );
+            $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['role']['putRoleStoreHouse'], $pack ) );
+            $pack = pack( "NNC*", -1, $role ) . $this->gamed->marshal( $params["task"], $this->data['role']['task'] );
 
-            return Gamed::SendToGamedBD( Gamed::createHeader( $this->data['role']['putRoleTask'], $pack ) );
+            return $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['role']['putRoleTask'], $pack ) );
         }
     }
 
@@ -291,8 +291,8 @@ class API
      */
     public function putJdRole($role, $params)
     {
-        /*$pack = pack("NNC*", -1, $role, 1).Gamed::marshal($params, config('role'));
-        Gamed::SendToGamedBD(Gamed::createHeader(config('code.putRole'), $pack));
+        /*$pack = pack("NNC*", -1, $role, 1).$this->gamed->marshal($params, config('role'));
+        $this->gamed->SendToGamedBD($this->gamed->createHeader(config('code.putRole'), $pack));
 
         return true;*/
     }
@@ -324,11 +324,11 @@ class API
             );
         }
 
-        $pack = pack( "NNCN", 344, 1025, 3, $receiver ) . Gamed::packString( $title ) . Gamed::packString( $context );
-        $pack .= Gamed::marshal( $item, $this->data['role']['pocket']['inv'] );
+        $pack = pack( "NNCN", 344, 1025, 3, $receiver ) . $this->gamed->packString( $title ) . $this->gamed->packString( $context );
+        $pack .= $this->gamed->marshal( $item, $this->data['role']['pocket']['inv'] );
         $pack .= pack("N", $money);
 
-        return Gamed::SendToDelivery( Gamed::createHeader( $this->data['code']['sendMail'], $pack ) );
+        return $this->gamed->SendToDelivery( $this->gamed->createHeader( $this->data['code']['sendMail'], $pack ) );
     }
 
     /**
@@ -340,9 +340,9 @@ class API
      */
     public function WorldChat( $role, $msg, $channel )
     {
-        $pack = pack("CCN", $channel, 0, $role) . Gamed::packString( $msg ) . Gamed::packOctet( '' );
+        $pack = pack("CCN", $channel, 0, $role) . $this->gamed->packString( $msg ) . $this->gamed->packOctet( '' );
 
-        return Gamed::SendToProvider( Gamed::createHeader( $this->data['code']['worldChat'], $pack ) );
+        return $this->gamed->SendToProvider( $this->gamed->createHeader( $this->data['code']['worldChat'], $pack ) );
     }
 
     /**
@@ -354,9 +354,9 @@ class API
      */
     public function forbidAcc( $role, $time, $reason )
     {
-        $pack = pack( "N*", -1, 0, $role, $time ) . Gamed::packString( $reason );
+        $pack = pack( "N*", -1, 0, $role, $time ) . $this->gamed->packString( $reason );
 
-        return Gamed::SendToDelivery( Gamed::createHeader( $this->data['code']['forbidAcc'], $pack ) );
+        return $this->gamed->SendToDelivery( $this->gamed->createHeader( $this->data['code']['forbidAcc'], $pack ) );
     }
 
     /**
@@ -368,9 +368,9 @@ class API
      */
     public function forbidRole( $role, $time, $reason )
     {
-        $pack = pack( "N*", -1, 0, $role, $time ) . Gamed::packString( $reason );
+        $pack = pack( "N*", -1, 0, $role, $time ) . $this->gamed->packString( $reason );
 
-        return Gamed::SendToDelivery( Gamed::createHeader( $this->data['code']['forbidRole'], $pack ) );
+        return $this->gamed->SendToDelivery( $this->gamed->createHeader( $this->data['code']['forbidRole'], $pack ) );
     }
 
     /**
@@ -382,9 +382,9 @@ class API
      */
     public function muteAcc( $role, $time, $reason )
     {
-        $pack = pack( "N*", -1, 0, $role, $time ) . Gamed::packString( $reason );
+        $pack = pack( "N*", -1, 0, $role, $time ) . $this->gamed->packString( $reason );
 
-        return Gamed::SendToDelivery( Gamed::createHeader( $this->data['code']['muteAcc'], $pack ) );
+        return $this->gamed->SendToDelivery( $this->gamed->createHeader( $this->data['code']['muteAcc'], $pack ) );
     }
 
     /**
@@ -396,9 +396,9 @@ class API
      */
     public function muteRole( $role, $time, $reason )
     {
-        $pack = pack( "N*", -1, 0, $role, $time ) . Gamed::packString( $reason );
+        $pack = pack( "N*", -1, 0, $role, $time ) . $this->gamed->packString( $reason );
 
-        return Gamed::SendToDelivery( Gamed::createHeader( $this->data['code']['muteRole'], $pack ) );
+        return $this->gamed->SendToDelivery( $this->gamed->createHeader( $this->data['code']['muteRole'], $pack ) );
     }
 
     /**
@@ -408,8 +408,8 @@ class API
      */
     public function getRoleid($rolename)
     {
-        $pack = pack("N", -1).Gamed::packString($rolename).pack("C", 1);
-        $data = Gamed::deleteHeader(Gamed::SendToGamedBD(Gamed::createHeader($this->data['code']['getRoleid'], $pack)));
+        $pack = pack("N", -1).$this->gamed->packString($rolename).pack("C", 1);
+        $data = $this->gamed->deleteHeader($this->gamed->SendToGamedBD($this->gamed->createHeader($this->data['code']['getRoleid'], $pack)));
         $var = unpack("l", $data);
         if($var[1] !== -1)
         {
@@ -426,9 +426,9 @@ class API
      */
     public function renameRole( $role, $oldname, $newname )
     {
-        $pack = pack( "N*", -1, $role ) . Gamed::packString( $oldname ) . Gamed::packString( $newname );
+        $pack = pack( "N*", -1, $role ) . $this->gamed->packString( $oldname ) . $this->gamed->packString( $newname );
 
-        return Gamed::SendToGamedBD( Gamed::createHeader( $this->data['code']['renameRole'], $pack ) );
+        return $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['code']['renameRole'], $pack ) );
     }
 
     /**
@@ -441,18 +441,18 @@ class API
         if ( $this->online )
         {
             $id = 0;
-            $pack = pack( 'N*', -1, 1, $id ) . Gamed::packString( '1' );
-            $pack = Gamed::createHeader( 352, $pack );
-            $send = Gamed::SendToDelivery( $pack );
-            $data = Gamed::deleteHeader($send);
-            $data = Gamed::unmarshal( $data, $this->data['RoleList'] );
+            $pack = pack( 'N*', -1, 1, $id ) . $this->gamed->packString( '1' );
+            $pack = $this->gamed->createHeader( 352, $pack );
+            $send = $this->gamed->SendToDelivery( $pack );
+            $data = $this->gamed->deleteHeader($send);
+            $data = $this->gamed->unmarshal( $data, $this->data['RoleList'] );
 
             if ( isset( $data['users'] ) )
             {
                 foreach ( $data['users'] as $user )
                 {
                     $online[] = $user;
-                    //$id = Gamed::MaxOnlineUserID( $data['users'] );
+                    //$id = $this->gamed->MaxOnlineUserID( $data['users'] );
                 }
             }
         }
@@ -468,96 +468,96 @@ class API
     {
         $tmp = 0;
         $pack = pack( "N*", -1, $role );
-        $data = Gamed::SendToGamedBD( Gamed::createHeader( $this->data['code']['getRoleFriend'], $pack ) );
-        Gamed::unpackCuint( $data, $tmp );
-        Gamed::unpackCuint( $data, $tmp );
+        $data = $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['code']['getRoleFriend'], $pack ) );
+        $this->gamed->unpackCuint( $data, $tmp );
+        $this->gamed->unpackCuint( $data, $tmp );
         $data = substr( $data, $tmp+5 );
 
-        return Gamed::unmarshal( $data, $this->data['FriendList'] );
+        return $this->gamed->unmarshal( $data, $this->data['FriendList'] );
     }
 
     public function addFaction($roleid, $name, $fid)
     {
-        $pack = pack("N*", -1).Gamed::packString($name).pack("NN", $roleid, $fid);
-        $pack = Gamed::createHeader($this->data['code']['AddFaction'], $pack);
-        return Gamed::SendToGamedBD($pack);
+        $pack = pack("N*", -1).$this->gamed->packString($name).pack("NN", $roleid, $fid);
+        $pack = $this->gamed->createHeader($this->data['code']['AddFaction'], $pack);
+        return $this->gamed->SendToGamedBD($pack);
     }
 
     public function delFaction($fid)
     {
         $pack = pack("N*", -1, $fid);
-        $pack = Gamed::createHeader($this->data['code']['DelFaction'], $pack);
-        return Gamed::SendToGamedBD($pack);
+        $pack = $this->gamed->createHeader($this->data['code']['DelFaction'], $pack);
+        return $this->gamed->SendToGamedBD($pack);
     }
 
     public function upgradeFaction($roleid, $fid, $level)
     {
         $pack = pack("N*", -1, $fid, $roleid, 0).pack("C", $level);
-        $pack = Gamed::createHeader($this->data['code']['FactionUpgrade'], $pack);
-        return Gamed::SendToGamedBD($pack);
+        $pack = $this->gamed->createHeader($this->data['code']['FactionUpgrade'], $pack);
+        return $this->gamed->SendToGamedBD($pack);
     }
 
     public function getFactionInfo($id)
     {
         $pack = pack("N*", -1, $id);
-        $pack = Gamed::createHeader($this->data['code']['getFactionInfo'], $pack);
-        $send = Gamed::SendToGamedBD($pack);
-        $data = Gamed::deleteHeader($send);
-        return Gamed::unmarshal($data, $this->data['FactionInfo']);
+        $pack = $this->gamed->createHeader($this->data['code']['getFactionInfo'], $pack);
+        $send = $this->gamed->SendToGamedBD($pack);
+        $data = $this->gamed->deleteHeader($send);
+        return $this->gamed->unmarshal($data, $this->data['FactionInfo']);
     }
 
     public function getFactionDetail($id)
     {
         $pack = pack("N*", -1, $id);
-        $pack = Gamed::createHeader($this->data['code']['getFactionDetail'], $pack);
-        $send = Gamed::SendToGamedBD($pack);
-        $data = Gamed::deleteHeader($send);
-        return Gamed::unmarshal($data, $this->data['FactionDetail']);
+        $pack = $this->gamed->createHeader($this->data['code']['getFactionDetail'], $pack);
+        $send = $this->gamed->SendToGamedBD($pack);
+        $data = $this->gamed->deleteHeader($send);
+        return $this->gamed->unmarshal($data, $this->data['FactionDetail']);
     }
 
     public function getFactionFortressDetail($id)
     {
         /*$pack = pack("N*", -1, $id);
-        $pack = Gamed::createHeader(config('code.GFactionFortressDetail'), $pack);
-        $send = Gamed::SendToGamedBD($pack);
-        $data = Gamed::deleteHeader($send);
-        return Gamed::unmarshal($data, config('FactionFortressDetail'));*/
+        $pack = $this->gamed->createHeader(config('code.GFactionFortressDetail'), $pack);
+        $send = $this->gamed->SendToGamedBD($pack);
+        $data = $this->gamed->deleteHeader($send);
+        return $this->gamed->unmarshal($data, config('FactionFortressDetail'));*/
     }
 
     public function getTerritories()
     {
         $pack = pack( "N*", -1, 1 );
-        $data = Gamed::SendToGamedBD( Gamed::createHeader( $this->data['code']['getTerritory'], $pack ) );
+        $data = $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['code']['getTerritory'], $pack ) );
         $length = 0;
-        Gamed::unpackCuint( $data, $length );
-        Gamed::unpackCuint( $data, $length );
+        $this->gamed->unpackCuint( $data, $length );
+        $this->gamed->unpackCuint( $data, $length );
         $length += 6;
         $data = substr($data, $length);
-        return Gamed::unmarshal( $data, $this->data['GTerritoryDetail'] );
+        return $this->gamed->unmarshal( $data, $this->data['GTerritoryDetail'] );
     }
 
     public function getRaw($table, $handler = '', $key = '')
     {
-        $pack = pack("N*",-1).Gamed::packLongOctet($table).Gamed::packOctet($handler).Gamed::packOctet($key);
-        $data = Gamed::deleteHeader(Gamed::SendToGamedBD(Gamed::createHeader(3055, $pack)));
-        return  Gamed::unmarshal($data, $this->data['RawRead']);
+        $pack = pack("N*",-1).$this->gamed->packLongOctet($table).$this->gamed->packOctet($handler).$this->gamed->packOctet($key);
+        $data = $this->gamed->deleteHeader($this->gamed->SendToGamedBD($this->gamed->createHeader(3055, $pack)));
+        return  $this->gamed->unmarshal($data, $this->data['RawRead']);
     }
 
     public function parseOctet($octet, $name)
     {
         $data = pack("H*", $octet);
-        return Gamed::unmarshal($data, $this->data['octet'][$name]);
+        return $this->gamed->unmarshal($data, $this->data['octet'][$name]);
     }
 
     public function getUserFaction($id)
     {
         $tmp = 0;
         $pack = pack("N*", -1, 1, $id);
-        $data = Gamed::SendToGamedBD(Gamed::createHeader($this->data['code']['getUserFaction'], $pack));
-        Gamed::unpackCuint($data, $tmp);
-        Gamed::unpackCuint($data, $tmp);
+        $data = $this->gamed->SendToGamedBD($this->gamed->createHeader($this->data['code']['getUserFaction'], $pack));
+        $this->gamed->unpackCuint($data, $tmp);
+        $this->gamed->unpackCuint($data, $tmp);
         $data = substr($data, $tmp+8);
-        return Gamed::unmarshal($data, $this->data['getUserFaction']);
+        return $this->gamed->unmarshal($data, $this->data['getUserFaction']);
     }
 
     public function generateSkill($params = array())
@@ -566,18 +566,18 @@ class API
         $id = isset($params['id']) ? dechex($params['id']) : 1;
         $level = isset($params['level']) ? dechex($params['level']) : 1;
         $progress = isset($params['progress']) ? dechex($params['progress']) : 0;
-        $skills .= Gamed::reverseOctet(Gamed::hex2octet($id));
-        $skills .= Gamed::reverseOctet(Gamed::hex2octet($progress));
-        $skills .= Gamed::reverseOctet(Gamed::hex2octet($level));
+        $skills .= $this->gamed->reverseOctet($this->gamed->hex2octet($id));
+        $skills .= $this->gamed->reverseOctet($this->gamed->hex2octet($progress));
+        $skills .= $this->gamed->reverseOctet($this->gamed->hex2octet($level));
         $count = dechex(strlen($skills)/24);
-        $skills = Gamed::reverseOctet(Gamed::hex2octet($count)).$skills;
+        $skills = $this->gamed->reverseOctet($this->gamed->hex2octet($count)).$skills;
 
         return $skills;
     }
 
     public function serverOnline()
     {
-        return @fsockopen( config( 'pw-api.local' ), config( 'pw-api.ports.client' ), $errCode, $errStr, 1 ) ? TRUE : FALSE;
+        return @fsockopen( settings( 'server_ip', '127.0.0.1' ), config( 'pw-api.ports.client' ), $errCode, $errStr, 1 ) ? TRUE : FALSE;
     }
 
     public function ports()
@@ -587,7 +587,7 @@ class API
         foreach ( $port_list as $name => $port )
         {
             $ports[$name]['port'] = $port;
-            $ports[$name]['open'] = @fsockopen( config( 'pw-api.local' ), $port, $errCode, $errStr, 1 ) ? TRUE : FALSE;
+            $ports[$name]['open'] = @fsockopen( settings( 'server_ip', '127.0.0.1' ), $port, $errCode, $errStr, 1 ) ? TRUE : FALSE;
         }
         return $ports;
     }

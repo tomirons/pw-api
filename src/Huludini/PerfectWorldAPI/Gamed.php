@@ -9,66 +9,70 @@ namespace Huludini\PerfectWorldAPI;
  */
 class Gamed
 {
-    public static $cycle = false;
+    public $ip;
+    
+    public $version;
+    
+    public $cycle = false;
 
     public function __construct()
     {
-        self::$cycle = false;
+        $this->cycle = false;
     }
 
-    public static function deleteHeader($data)
+    public function deleteHeader($data)
     {
         $length = 0;
-        self::unpackCuint($data, $length);
-        self::unpackCuint($data, $length);
+        $this->unpackCuint($data, $length);
+        $this->unpackCuint($data, $length);
         $length += 8;
         $data = substr($data, $length);
 
         return $data;
     }
 
-    public static function createHeader($opcode, $data)
+    public function createHeader($opcode, $data)
     {
-        return self::cuint($opcode).self::cuint(strlen($data)).$data;
+        return $this->cuint($opcode).$this->cuint(strlen($data)).$data;
     }
 
-    public static function packString($data)
+    public function packString($data)
     {
         $data = iconv("UTF-8", "UTF-16LE", $data);
-        return self::cuint(strlen($data)).$data;
+        return $this->cuint(strlen($data)).$data;
     }
-    public static function packLongOctet($data)
+    public function packLongOctet($data)
     {
         return  pack("n",strlen($data)+32768).$data;
     }
 
-    public static function packOctet($data)
+    public function packOctet($data)
     {
         $data = pack("H*", (string)$data);
-        return self::cuint(strlen($data)).$data;
+        return $this->cuint(strlen($data)).$data;
     }
 
-    public static function packInt($data)
+    public function packInt($data)
     {
         return pack("N", $data);
     }
 
-    public static function packByte($data)
+    public function packByte($data)
     {
         return pack("C", $data);
     }
 
-    public static function packFloat($data)
+    public function packFloat($data)
     {
         return strrev(pack("f", $data));
     }
 
-    public static function packShort($data)
+    public function packShort($data)
     {
         return pack("n", $data);
     }
 
-    public static function packLong($data)
+    public function packLong($data)
     {
         $left = 0xffffffff00000000;
         $right = 0x00000000ffffffff;
@@ -77,7 +81,7 @@ class Gamed
         return pack('NN', $l, $r);
     }
 
-    public static function hex2octet($tmp)
+    public function hex2octet($tmp)
     {
         $t = 8-strlen($tmp);
         for($i = 0 ; $i < $t; $i++){
@@ -86,7 +90,7 @@ class Gamed
         return $tmp;
     }
 
-    public static function reverseOctet($str)
+    public function reverseOctet($str)
     {
         $octet = '';
         $length = strlen($str)/2;
@@ -98,7 +102,7 @@ class Gamed
         return $octet;
     }
 
-    public static function hex2int($value)
+    public function hex2int($value)
     {
         $value = str_split($value, 2);
         $value = $value[3] . $value[2] . $value[1] . $value[0];
@@ -107,26 +111,26 @@ class Gamed
         return $value;
     }
 
-    public static function getTime($str)
+    public function getTime($str)
     {
         return hexdec($str);
     }
 
-    public static function getIp($str)
+    public function getIp($str)
     {
         return long2ip(hexdec($str));
     }
 
-    public static function putIp($str)
+    public function putIp($str)
     {
         $ip = ip2long($str);
         $ip = dechex($ip);
-        $ip = hexdec(self::reverseOctet($ip));
+        $ip = hexdec($this->reverseOctet($ip));
 
         return $ip;
     }
 
-    public static function cuint($data)
+    public function cuint($data)
     {
         if($data < 64)
             return strrev(pack("C", $data));
@@ -137,23 +141,23 @@ class Gamed
         return strrev(pack("c", -32) . pack("i", $data));
     }
 
-    public static function unpackLong($data)
+    public function unpackLong($data)
     {
         //$data = pack("H*", $data);
         $set = unpack('N2', $data);
         return $set[1] << 32 | $set[2];
     }
 
-    public static function unpackOctet($data, &$tmp)
+    public function unpackOctet($data, &$tmp)
     {
         $p=0;
-        $size = self::unpackCuint($data,$p);
+        $size = $this->unpackCuint($data,$p);
         $octet= bin2hex(substr($data,$p,$size));
         $tmp=$tmp+$p+$size;
         return $octet;
     }
 
-    public static function unpackString($data, &$tmp)
+    public function unpackString($data, &$tmp)
     {
         $size = (hexdec(bin2hex(substr($data, $tmp,1))) >=	128) ? 2 : 1;
         $octetlen = (hexdec(bin2hex(substr($data, $tmp, $size))) >=	128) ? hexdec(bin2hex(substr($data, $tmp, $size)))-32768 : hexdec(bin2hex(substr($data, $tmp, $size)));
@@ -163,9 +167,9 @@ class Gamed
         return mb_convert_encoding(substr($data, $pp+$size, $octetlen), "UTF-8", "UTF-16LE");
     }
 
-    public static function unpackCuint($data, &$p)
+    public function unpackCuint($data, &$p)
     {
-        if ( config( 'pw_api.game_version' ) != '07' )
+        if ( settings( 'server_version', '101' ) != '07' )
         {
             $hex = hexdec(bin2hex(substr($data, $p, 1)));
             $min = 0;
@@ -206,27 +210,27 @@ class Gamed
         }
     }
 
-    public static function SendToGamedBD( $data )
+    public function SendToGamedBD( $data )
     {
-        return self::SendToSocket( $data, config( 'pw-api.ports.gamedbd' ) );
+        return $this->SendToSocket( $data, config( 'pw-api.ports.gamedbd' ) );
     }
 
-    public static function SendToDelivery( $data )
+    public function SendToDelivery( $data )
     {
-        return self::SendToSocket( $data, config( 'pw-api.ports.gdeliveryd' ), true );
+        return $this->SendToSocket( $data, config( 'pw-api.ports.gdeliveryd' ), true );
     }
 
-    public static function SendToProvider( $data )
+    public function SendToProvider( $data )
     {
-        return self::SendToSocket( $data, config( 'pw-api.ports.gacd' ) );
+        return $this->SendToSocket( $data, config( 'pw-api.ports.gacd' ) );
     }
 
-    public static function SendToSocket( $data, $port, $RecvAfterSend = false, $buf = null )
+    public function SendToSocket( $data, $port, $RecvAfterSend = false, $buf = null )
     {
-        if ( @fsockopen( config( 'pw-api.local' ), $port, $errCode, $errStr, 1 ) )
+        if ( @fsockopen( settings( 'server_ip', '127.0.0.1' ), $port, $errCode, $errStr, 1 ) )
         {
             $sock = socket_create( AF_INET, SOCK_STREAM, SOL_TCP );
-            socket_connect( $sock, config( 'pw-api.local' ), $port );
+            socket_connect( $sock, settings( 'server_ip', '127.0.0.1' ), $port );
 
 
             if ( config( 'pw-api.s_block' ) ) socket_set_block( $sock );
@@ -251,8 +255,8 @@ class Gamed
                     $buf .= socket_read( $sock, 1024, PHP_BINARY_READ );
                     if ( strlen( $buf ) >= 8 )
                     {
-                        self::unpackCuint( $buf, $tmp );
-                        $length = self::unpackCuint( $buf, $tmp );
+                        $this->unpackCuint( $buf, $tmp );
+                        $length = $this->unpackCuint( $buf, $tmp );
                         while( strlen( $buf ) < $length )
                         {
                             $buf .= socket_read( $sock, 1024, PHP_BINARY_READ );
@@ -271,21 +275,21 @@ class Gamed
         }
     }
 
-    public static function unmarshal(&$rb, $struct)
+    public function unmarshal(&$rb, $struct)
     {
         $data = array();
         foreach($struct as $key => $val){
             if(is_array($val)){
-                if(self::$cycle){
-                    if(self::$cycle > 0){
-                        for($i = 0; $i < self::$cycle; $i++){
-                            $data[$key][$i] = self::unmarshal($rb, $val);
+                if($this->cycle){
+                    if($this->cycle > 0){
+                        for($i = 0; $i < $this->cycle; $i++){
+                            $data[$key][$i] = $this->unmarshal($rb, $val);
                             if(!$data[$key][$i]) return false;
                         }
                     }
-                    self::$cycle = false;
+                    $this->cycle = false;
                 }else{
-                    $data[$key] = self::unmarshal($rb, $val);
+                    $data[$key] = $this->unmarshal($rb, $val);
                     if(!$data[$key]) return false;
                 }
             }else{
@@ -302,7 +306,7 @@ class Gamed
                         $data[$key] = $un[1];
                         break;
                     case 'long':
-                        $data[$key] = self::unpackLong(substr($rb, 0, 8));
+                        $data[$key] = $this->unpackLong(substr($rb, 0, 8));
                         $rb = substr($rb, 8);
                         break;
                     case 'lint':
@@ -317,17 +321,17 @@ class Gamed
                         $data[$key] = $un[1];
                         break;
                     case 'cuint':
-                        $cui = self::unpackCuint($rb, $tmp);
+                        $cui = $this->unpackCuint($rb, $tmp);
                         $rb = substr($rb, $tmp);
-                        if($cui > 0) self::$cycle = $cui;
-                        else self::$cycle = -1;
+                        if($cui > 0) $this->cycle = $cui;
+                        else $this->cycle = -1;
                         break;
                     case 'octets':
-                        $data[$key] = self::unpackOctet($rb, $tmp);
+                        $data[$key] = $this->unpackOctet($rb, $tmp);
                         $rb = substr($rb, $tmp);
                         break;
                     case 'name':
-                        $data[$key] = self::unpackString($rb, $tmp);
+                        $data[$key] = $this->unpackString($rb, $tmp);
                         $rb = substr($rb, $tmp);
                         break;
                     case 'short':
@@ -357,51 +361,51 @@ class Gamed
         return $data;
     }
 
-    public static function marshal($pack, $struct)
+    public function marshal($pack, $struct)
     {
-        self::$cycle = false;
+        $this->cycle = false;
         $data = '';
         foreach($struct as $key => $val){
             if(substr($key, 0, 1) == "@") continue;
             if(is_array($val)){
-                if(self::$cycle){
-                    if(self::$cycle > 0){
-                        $count = self::$cycle;
+                if($this->cycle){
+                    if($this->cycle > 0){
+                        $count = $this->cycle;
                         for($i = 0; $i < $count; $i++){
-                            $data .= self::marshal($pack[$key][$i], $val);
+                            $data .= $this->marshal($pack[$key][$i], $val);
                         }
                     }
-                    self::$cycle = false;
+                    $this->cycle = false;
                 }else{
-                    $data .= self::marshal($pack[$key], $val);
+                    $data .= $this->marshal($pack[$key], $val);
                 }
             }else{
                 switch($val){
                     case 'int':
-                        $data .= self::packInt((int)$pack[$key]);
+                        $data .= $this->packInt((int)$pack[$key]);
                         break;
                     case 'byte':
-                        $data .= self::packByte($pack[$key]);
+                        $data .= $this->packByte($pack[$key]);
                         break;
                     case 'cuint':
                         $arrkey = substr($key, 0, -5);
                         $cui = isset($pack[$arrkey]) ? count($pack[$arrkey]) : 0;
-                        self::$cycle = ($cui > 0) ? $cui : -1;
-                        $data .= self::cuint($cui);
+                        $this->cycle = ($cui > 0) ? $cui : -1;
+                        $data .= $this->cuint($cui);
                         break;
                     case 'octets':
                         if($pack[$key] === array()) $pack[$key] = '';
-                        $data .= self::packOctet($pack[$key]);
+                        $data .= $this->packOctet($pack[$key]);
                         break;
                     case 'name':
                         if($pack[$key] === array()) $pack[$key] = '';
-                        $data .= self::packString($pack[$key]);
+                        $data .= $this->packString($pack[$key]);
                         break;
                     case 'short':
-                        $data .= self::packShort($pack[$key]);
+                        $data .= $this->packShort($pack[$key]);
                         break;
                     case 'float':
-                        $data .= self::packFloat($pack[$key]);
+                        $data .= $this->packFloat($pack[$key]);
                         break;
                     case 'cat1':
                     case 'cat2':
@@ -415,7 +419,7 @@ class Gamed
         return $data;
     }
 
-    public static function MaxOnlineUserID( $arr )
+    public function MaxOnlineUserID( $arr )
     {
         $max = $arr[0]['userid'];
         for($i=1;$i<count($arr);$i++){
@@ -427,7 +431,7 @@ class Gamed
         return $max+1;
     }
 
-    public static function getArrayValue($array = array(), $index = null)
+    public function getArrayValue($array = array(), $index = null)
     {
         return $array[$index];
     }
