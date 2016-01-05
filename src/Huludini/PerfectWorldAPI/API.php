@@ -46,21 +46,34 @@ class API
      */
     public function getRole($role)
     {
-        $pack = pack("N*", -1, $role);
-        $pack = $this->gamed->createHeader( $this->data['code']['getRole'], $pack );
-        $send = $this->gamed->SendToGamedBD( $pack );
-        $data = $this->gamed->deleteHeader( $send );
-        $user = $this->gamed->unmarshal( $data, $this->data['role'] );
-
-        if( !is_array( $user ) )
+        if ( settings( 'server_version' ) == '07' )
         {
-            $user['base'] = self::getRoleBase($role);
-            $user['status'] = self::getRoleStatus($role);
-            $user['pocket'] = self::getRoleInventory($role);
-            $user['pets'] = self::getRolePetBadge($role);
-            $user['equipment'] = self::getRoleEquipment($role);
-            $user['storehouse'] = self::getRoleStoreHouse($role);
-            $user['task'] = self::getRoleTask($role);
+            $user['base'] = $this->getRoleBase($role);
+            $user['status'] = $this->getRoleStatus($role);
+            $user['pocket'] = $this->getRoleInventory($role);
+            //$user['pets'] = $this->getRolePetBadge($role);
+            $user['equipment'] = $this->getRoleEquipment($role);
+            $user['storehouse'] = $this->getRoleStoreHouse($role);
+            $user['task'] = $this->getRoleTask($role);
+        }
+        else
+        {
+            $pack = pack("N*", -1, $role);
+            $pack = $this->gamed->createHeader( $this->data['code']['getRole'], $pack );
+            $send = $this->gamed->SendToGamedBD( $pack );
+            $data = $this->gamed->deleteHeader( $send );
+            $user = $this->gamed->unmarshal( $data, $this->data['role'] );
+
+            if( !is_array( $user ) )
+            {
+                $user['base'] = $this->getRoleBase($role);
+                $user['status'] = $this->getRoleStatus($role);
+                $user['pocket'] = $this->getRoleInventory($role);
+                //$user['pets'] = $this->getRolePetBadge($role);
+                $user['equipment'] = $this->getRoleEquipment($role);
+                $user['storehouse'] = $this->getRoleStoreHouse($role);
+                $user['task'] = $this->getRoleTask($role);
+            }
         }
 
         return $user;
@@ -72,7 +85,7 @@ class API
         $pack = $this->gamed->createHeader($this->data['code']['getRoleBase'], $pack);
         $send = $this->gamed->SendToGamedBD($pack);
         $data = $this->gamed->deleteHeader($send);
-        $user = $this->gamed->unmarshal($data, $this->data['code']['base']);
+        $user = $this->gamed->unmarshal($data, $this->data['role']['base']);
 
         return $user;
     }
@@ -94,7 +107,7 @@ class API
         $pack = $this->gamed->createHeader($this->data['code']['getRoleInventory'], $pack);
         $send = $this->gamed->SendToGamedBD($pack);
         $data = $this->gamed->deleteHeader($send);
-        $user = $this->gamed->unmarshal($data, $this->data['role']['pocket']['inv']);
+        $user = $this->gamed->unmarshal($data, $this->data['role']['pocket']);
 
         return $user;
     }
@@ -105,7 +118,7 @@ class API
         $pack = $this->gamed->createHeader($this->data['code']['getRoleEquipment'], $pack);
         $send = $this->gamed->SendToGamedBD($pack);
         $data = $this->gamed->deleteHeader($send);
-        $user = $this->gamed->unmarshal($data, $this->data['role']['pocket']['equipment']);
+        $user = $this->gamed->unmarshal($data, $this->data['role']['equipment']);
 
         return $user;
     }
@@ -259,7 +272,7 @@ class API
             $params['storehouse']['material'] = array();
             $params['storehouse']['material'][] = $tmp;
         }
-        if ( $this->data['code']['putRole'] != '' )
+        if ( settings( 'server_version' ) != '07' )
         {
             $pack = pack( "NNC*", -1, $role, 1).$this->gamed->marshal( $params, $this->data['role'] );
 
@@ -268,18 +281,18 @@ class API
         else
         {
             $pack = pack( "NNC*", -1, $role ) . $this->gamed->marshal( $params["base"], $this->data['role']['base'] );
-            $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['role']['putRoleBase'], $pack ) );
+            $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['code']['putRoleBase'], $pack ) );
             $pack = pack( "NNC*", -1, $role ) . $this->gamed->marshal( $params["status"], $this->data['role']['status'] );
-            $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['role']['putRoleStatus'], $pack ) );
+            $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['code']['putRoleStatus'], $pack ) );
             $pack = pack( "NNC*", -1, $role ) . $this->gamed->marshal( $params["pocket"], $this->data['role']['pocket'] );
-            $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['role']['putRoleInventory'], $pack ) );
+            $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['code']['putRoleInventory'], $pack ) );
             $pack = pack( "NNC*", -1, $role ) . $this->gamed->marshal( $params["equipment"], $this->data['role']['equipment'] );
-            $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['role']['putRoleEquipment'], $pack ) );
+            $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['code']['putRoleEquipment'], $pack ) );
             $pack = pack( "NNC*", -1, $role ) . $this->gamed->marshal( $params["storehouse"], $this->data['role']['storehouse'] );
-            $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['role']['putRoleStoreHouse'], $pack ) );
+            $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['code']['putRoleStoreHouse'], $pack ) );
             $pack = pack( "NNC*", -1, $role ) . $this->gamed->marshal( $params["task"], $this->data['role']['task'] );
 
-            return $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['role']['putRoleTask'], $pack ) );
+            return $this->gamed->SendToGamedBD( $this->gamed->createHeader( $this->data['code']['putRoleTask'], $pack ) );
         }
     }
 
